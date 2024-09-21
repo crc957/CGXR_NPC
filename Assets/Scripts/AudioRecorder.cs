@@ -5,11 +5,13 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Networking;
 
 public class AudioRecorder : MonoBehaviour
 {
     public Button recordButton;
     public Button nextButton;
+    public string flaskServerUrl = "https://cfd9-163-239-126-56.ngrok-free.app/upload";
     public AudioSource audioSource;
     private bool isRecording = false;
     private AudioClip recordedClip;
@@ -59,22 +61,51 @@ public class AudioRecorder : MonoBehaviour
             Debug.Log("Recording stopped.");
             SaveRecording();
             buttonImage.color = Color.white; // 녹음이 끝났을 때 버튼 색상을 다시 흰색으로 변경
-
-            GoToListenScene();
         }
     }
 
     void SaveRecording()
     {
-        string filePath = Path.Combine(Application.persistentDataPath, "recordedAudio.wav"); // 저장 파일 이름
+        string filePath = Path.Combine(Application.persistentDataPath, "recordedAudio.wav");
         SavWav.Save(filePath, recordedClip);
-        PlayerPrefs.SetString("SavedAudioPath", filePath); // 파일 저장경로
+        PlayerPrefs.SetString("SavedAudioPath", filePath);
         PlayerPrefs.Save();
+        StartCoroutine(UploadWav(filePath));
     }
+
+    // Flask 서버로 오디오 파일 업로드 함수
+    IEnumerator UploadWav(string filePath)
+    {
+        byte[] fileData = File.ReadAllBytes(filePath);
+
+        // List<IMultipartFormSection>을 사용하여 파일을 포함한 폼 데이터를 생성
+        List<IMultipartFormSection> form = new List<IMultipartFormSection>();
+        form.Add(new MultipartFormFileSection("file", fileData, "recordedAudio.wav", "audio/wav"));
+
+        // UnityWebRequest.Post를 사용하여 파일을 폼 데이터로 전송
+        UnityWebRequest request = UnityWebRequest.Post(flaskServerUrl, form);
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            // 응답에서 워터마크된 파일의 데이터를 받아서 저장
+            string watermarkedFilePath = Path.Combine(Application.persistentDataPath, "watermarkedAudio.wav");
+            File.WriteAllBytes(watermarkedFilePath, request.downloadHandler.data);
+            Debug.Log("File received successfully and saved to: " + watermarkedFilePath);
+            GoToListenScene();  // 파일 업로드가 성공적으로 완료된 후 씬 전환
+        }
+        else
+        {
+            Debug.LogError("Error uploading audio: " + request.error);
+        }
+    }
+
 
     // 씬을 ListenScene으로 전환
     void GoToListenScene()
     {
         SceneManager.LoadScene("ListenScene"); // ListenScene으로 전환
     }
+
 }

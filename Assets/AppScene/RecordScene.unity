@@ -2190,6 +2190,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   recordButton: {fileID: 2097144399}
   nextButton: {fileID: 1259702936}
+  flaskServerUrl: https://cfd9-163-239-126-56.ngrok-free.app/upload
   audioSource: {fileID: 1440732451}
 --- !u!1 &1461962486
 GameObject:
@@ -2697,7 +2698,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e2a4b3755185e14bb4d5228adb79e5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  recordButton: {fileID: 0}
+  recordButton: {fileID: 2097144399}
   progressBar: {fileID: 0}
   message: {fileID: 0}
   dropdown: {fileID: 0}

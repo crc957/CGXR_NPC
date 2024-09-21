@@ -26,6 +26,7 @@ namespace Samples.Whisper
         private bool blinkState = false;
         private float blinkSpeed = 1.0f;
 
+        /*
         private void Start()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -38,6 +39,13 @@ namespace Samples.Whisper
             recordButton.onClick.AddListener(ToggleRecording);
             dropdown.onValueChanged.AddListener(ChangeMicrophone);
 #endif
+        }
+        */
+
+        private void Start()
+        {
+            // 녹음 시작/종료를 recordButton 클릭으로 제어
+            recordButton.onClick.AddListener(ToggleRecording);
         }
 
         private void ChangeMicrophone(int index)
@@ -83,29 +91,8 @@ namespace Samples.Whisper
         {
             if (isRecording) return;
 
-            // 사용 가능한 마이크 장치 목록 가져오기
-            string[] devices = Microphone.devices;
-            if (devices.Length == 0)
-            {
-                Debug.LogError("No microphone devices found.");
-                return;
-            }
-
-            Debug.Log("Recording started.");
-            isRecording = true;
-            nextBlink = Time.time + (1.0f / blinkSpeed);
-
-            var index = PlayerPrefs.GetInt("user-mic-device-index", 0);
-            if (index < 0 || index >= devices.Length)
-            {
-                Debug.LogError("Invalid microphone index selected.");
-                return;
-            }
-
-            string selectedDevice = devices[index];
-
-            // 마이크 장치 이름을 그대로 사용
-            Debug.Log("Selected Microphone: " + selectedDevice);
+            string selectedDevice = null; // 안드로이드 기본 마이크 사용
+            Debug.Log("Using built-in microphone for recording.");
 
             int minFreq, maxFreq;
             Microphone.GetDeviceCaps(selectedDevice, out minFreq, out maxFreq);
@@ -117,27 +104,16 @@ namespace Samples.Whisper
 
             try
             {
-                clip = Microphone.Start(selectedDevice, false, duration, maxFreq);
+                clip = Microphone.Start(selectedDevice, false, duration, maxFreq); // 녹음 시작
+                isRecording = true;
+                time = 0;
+                nextBlink = Time.time + (1.0f / blinkSpeed);
+                Debug.Log("Recording started with built-in microphone.");
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to start recording with the selected microphone. Exception: " + ex.Message);
-                return;
-            }
-
-            if (clip == null)
-            {
-                Debug.LogError("Failed to start recording with the selected microphone.");
+                Debug.LogError("Failed to start recording: " + ex.Message);
                 isRecording = false;
-            }
-            else
-            {
-                Debug.Log("Recording started with " + selectedDevice);
-                isRecording = true;
-
-                // 녹음이 성공적으로 시작된 후에 마이크 이름에서 한글 및 특수 문자 제거
-                string sanitizedDeviceName = RemoveKoreanAndSpecialCharacters(selectedDevice);
-                Debug.Log("Sanitized Microphone Name: " + sanitizedDeviceName);
             }
         }
 
@@ -167,6 +143,8 @@ namespace Samples.Whisper
 
         private async void EndRecording()
         {
+            if (!isRecording) return;
+
             Debug.Log("Recording ended.");
             isRecording = false;
 
