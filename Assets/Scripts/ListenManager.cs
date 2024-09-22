@@ -8,8 +8,7 @@ using UnityEngine.SceneManagement;
 public class ListenManager : MonoBehaviour
 {
     public Button playButton;
-    public Button yesButton;
-    public Button noButton;
+    public Button okButton;
     public AudioSource audioSource;
     private string filePath;
 
@@ -30,9 +29,7 @@ public class ListenManager : MonoBehaviour
 
         playButton.onClick.AddListener(PlayAudio);
 
-        yesButton.onClick.AddListener(GoYesScene);
-
-        noButton.onClick.AddListener(GoNoScene);
+        okButton.onClick.AddListener(GoOKScene);
     }
 
     IEnumerator LoadAudio(string path)
@@ -59,21 +56,12 @@ public class ListenManager : MonoBehaviour
         }
     }
 
-    void GoYesScene()
+    void GoOKScene()
     {
         if (audioSource.isPlaying)
         {
             audioSource.Stop();  // 오디오 재생을 멈추고 씬 전환
         }
-        SceneManager.LoadScene("YesScene");
-    }
-
-    void GoNoScene()
-    {
-        if (audioSource.isPlaying)
-        {
-            audioSource.Stop();  // 오디오 재생을 멈추고 씬 전환
-        }
-        SceneManager.LoadScene("NoScene");
+        SceneManager.LoadScene("OKScene");
     }
 }

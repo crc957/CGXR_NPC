@@ -15,9 +15,6 @@ EditorBuildSettings:
     path: Assets/AppScene/ListenScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/AppScene/YesScene.unity
-    guid: 3eda8cc973fe5264697e989397f8a9f8
-  - enabled: 1
-    path: Assets/AppScene/NoScene.unity
-    guid: 05f586ee82a6acf4887036b02a3d3dd4
+    path: Assets/AppScene/OKScene.unity
+    guid: c7e1cc7c32df1ad4db9e18a43233ff9b
   m_configObjects: {}
