@@ -70,6 +70,10 @@ public class ListenManager : MonoBehaviour
 
     void GoNoScene()
     {
+        if (audioSource.isPlaying)
+        {
+            audioSource.Stop();  // 오디오 재생을 멈추고 씬 전환
+        }
         SceneManager.LoadScene("NoScene");
     }
 }
