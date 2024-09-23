@@ -8,9 +8,13 @@ public class ContractManager : MonoBehaviour
     public Button[] buttons; // 선택하는 버튼
     public Color defaultColor = Color.white; // 기본 색상
     public Color clickedColor = Color.green; // 클릭 후 색상
+    public Toggle toggle; // 워터마크 토글
 
     private Image[] buttonImages;
-    private bool[] isClicked; // 각 버튼의 상태를 저장 (초록색인지 여부)
+    private bool[] isClicked;
+
+    // 워터마크 옵션 저장을 위한 딕셔너리
+    private Dictionary<string, bool> watermarkOptions = new Dictionary<string, bool>();
 
     void Start()
     {
@@ -30,7 +34,16 @@ public class ContractManager : MonoBehaviour
 
             // 버튼 클릭 이벤트에 각기 다른 인덱스를 가진 메소드 연결
             buttons[i].onClick.AddListener(() => OnButtonClick(index));
+
+            // 딕셔너리에 각 버튼의 상태 추가(버튼 이름을 키로 사용)
+            if (!watermarkOptions.ContainsKey(buttons[i].name))
+            {
+                watermarkOptions.Add(buttons[i].name, false);
+            }
         }
+
+        // Toggle의 상태가 바뀔 때 호출되는 이벤트 등록
+        toggle.onValueChanged.AddListener(OnToggleChanged);
     }
 
     void OnButtonClick(int index)
@@ -46,5 +59,25 @@ public class ContractManager : MonoBehaviour
             buttonImages[index].color = clickedColor;
             isClicked[index] = true;
         }
+
+        watermarkOptions[buttons[index].name] = isClicked[index];
+    }
+
+    // Toggle 상태 변경 시 호출되는 메소드
+    void OnToggleChanged(bool isOn)
+    {
+        if (isOn)
+        {
+            Debug.Log("Toggle is On");
+        }
+        else
+        {
+            Debug.Log("Toggle is Off");
+        }
+    }
+
+    public bool IsWatermarkEnabled()
+    {
+        return toggle.isOn;
     }
 }

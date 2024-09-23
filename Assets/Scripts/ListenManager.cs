@@ -2,66 +2,110 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
 using System.IO;
-using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement;  // 씬 전환을 위해 UnityEngine.SceneManagement 네임스페이스 추가
 
 public class ListenManager : MonoBehaviour
 {
-    public Button playButton;
-    public Button okButton;
-    public AudioSource audioSource;
+    public Button uploadButton;
+    public string flaskServerUrl = "https://d7ec-163-239-126-56.ngrok-free.app/upload"; // Flask 서버 로컬 주소 또는 ngrok 주소
     private string filePath;
+    private bool isUploading = false; // 업로드 상태를 나타내는 플래그
 
     void Start()
     {
-        // PlayerPrefs에서 저장된 오디오 파일 경로 불러오기
         filePath = PlayerPrefs.GetString("SavedAudioPath", "");
 
         if (File.Exists(filePath))
         {
-            // 오디오 파일을 로드하고 재생할 준비
-            StartCoroutine(LoadAudio(filePath));
+            Debug.Log("Audio file found at: " + filePath);
         }
         else
         {
-            Debug.LogWarning("No audio file found at: " + filePath);
+            Debug.LogWarning("Audio file not found at: " + filePath);
         }
 
-        playButton.onClick.AddListener(PlayAudio);
-
-        okButton.onClick.AddListener(GoOKScene);
+        Debug.Log("Flask Server URL: " + flaskServerUrl); // Flask 서버 URL 출력
+        uploadButton.onClick.AddListener(UploadToFlaskServer);
     }
 
-    IEnumerator LoadAudio(string path)
+    void UploadToFlaskServer()
     {
-        using (WWW www = new WWW("file://" + path))
+        if (File.Exists(filePath) && !isUploading)
         {
-            yield return www;
-
-            audioSource.clip = www.GetAudioClip(false, false);
-            Debug.Log("Audio loaded from: " + path);
-        }
-    }
-
-    void PlayAudio()
-    {
-        if (audioSource.clip != null)
-        {
-            audioSource.Play();
-            Debug.Log("Playing audio...");
+            isUploading = true; // 업로드 시작 시 플래그 설정
+            StartCoroutine(UploadWav(filePath)); // 파일 업로드 요청
         }
         else
         {
-            Debug.LogWarning("No audio clip loaded to play.");
+            if (isUploading)
+            {
+                Debug.LogWarning("Upload is already in progress.");
+            }
+            else
+            {
+                Debug.LogError("File not found, cannot upload.");
+            }
         }
     }
 
+    IEnumerator UploadWav(string filePath)
+    {
+        Debug.Log("UploadWav coroutine started");
+
+        byte[] fileData = File.ReadAllBytes(filePath);
+        Debug.Log($"File data read. Size: {fileData.Length} bytes");
+
+        // 워터마크 적용 여부 수집 (테스트로 true 설정)
+        bool isWatermarkEnabled = true; // 필요에 따라 true 또는 false로 설정
+
+        // List<IMultipartFormSection>을 사용하여 파일을 포함한 폼 데이터를 생성
+        List<IMultipartFormSection> form = new List<IMultipartFormSection>();
+        form.Add(new MultipartFormFileSection("file", fileData, "recordedAudio.wav", "audio/wav"));
+        Debug.Log("File section added to form");
+
+        // 워터마크 적용 여부 추가 - Boolean 값을 문자열 "true" 또는 "false"로 변환하여 전송
+        form.Add(new MultipartFormDataSection("watermarkCheck", isWatermarkEnabled.ToString().ToLower()));
+        Debug.Log("Watermark check section added to form");
+
+        // UnityWebRequest.Post를 사용하여 파일을 폼 데이터로 전송
+        UnityWebRequest request = UnityWebRequest.Post(flaskServerUrl, form);
+        Debug.Log("UnityWebRequest created");
+
+        yield return request.SendWebRequest();
+        Debug.Log($"Request sent. Status: {request.result}");
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            // 응답에서 워터마크된 파일의 데이터를 받아서 저장
+            if (request.downloadHandler.data.Length > 0)
+            {
+                string watermarkedFilePath = Path.Combine(Application.persistentDataPath, "watermarkedAudio.wav");
+                File.WriteAllBytes(watermarkedFilePath, request.downloadHandler.data);
+                Debug.Log("File received successfully and saved to: " + watermarkedFilePath);
+
+                // OKScene으로 전환
+                GoOKScene();
+            }
+            else
+            {
+                Debug.Log("No file data received.");
+            }
+        }
+        else
+        {
+            //Debug.LogError("Error uploading audio: " + request.error);
+            //Debug.LogError("Response text: " + request.downloadHandler.text);
+        }
+
+        isUploading = false; // 업로드 완료 후 플래그 해제
+    }
+
+    // 씬 전환 함수
     void GoOKScene()
     {
-        if (audioSource.isPlaying)
-        {
-            audioSource.Stop();  // 오디오 재생을 멈추고 씬 전환
-        }
+        Debug.Log("Navigating to OKScene...");
         SceneManager.LoadScene("OKScene");
     }
 }

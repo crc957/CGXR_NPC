@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028334, g: 0.22571328, b: 0.3069217, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028359, g: 0.22571385, b: 0.30692258, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -706,6 +706,7 @@ MonoBehaviour:
   - {fileID: 668836896}
   defaultColor: {r: 1, g: 1, b: 1, a: 1}
   clickedColor: {r: 0, g: 1, b: 0, a: 1}
+  toggle: {fileID: 750807567}
 --- !u!1 &177133518
 GameObject:
   m_ObjectHideFlags: 0
@@ -3536,7 +3537,7 @@ GameObject:
   - component: {fileID: 750807566}
   - component: {fileID: 750807567}
   m_Layer: 5
-  m_Name: Toggle
+  m_Name: WatermarkToggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9247,9 +9248,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 831e0af5ac517ad47b0a3d710a9e0169, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playButton: {fileID: 2094191354}
-  okButton: {fileID: 388733275}
-  audioSource: {fileID: 2025478328}
+  uploadButton: {fileID: 388733275}
+  flaskServerUrl: https://d7ec-163-239-126-56.ngrok-free.app/upload
 --- !u!82 &2025478328
 AudioSource:
   m_ObjectHideFlags: 0

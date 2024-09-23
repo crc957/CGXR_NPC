@@ -8,6 +8,7 @@ namespace Samples.Whisper
 {
     public class Whisper : MonoBehaviour
     {
+        [SerializeField] private Button audioButton; // 새로 추가한 오디오 녹음 버튼
         [SerializeField] private Button recordButton;
         [SerializeField] private Image progressBar;
         [SerializeField] private Text message;
@@ -26,26 +27,18 @@ namespace Samples.Whisper
         private bool blinkState = false;
         private float blinkSpeed = 1.0f;
 
-        /*
         private void Start()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            dropdown.options.Add(new Dropdown.OptionData("Microphone not supported on WebGL"));
+    dropdown.options.Add(new Dropdown.OptionData("Microphone not supported on WebGL"));
 #else
             foreach (var device in Microphone.devices)
             {
                 dropdown.options.Add(new Dropdown.OptionData(device));
             }
-            recordButton.onClick.AddListener(ToggleRecording);
+            audioButton.onClick.AddListener(ToggleRecording);
             dropdown.onValueChanged.AddListener(ChangeMicrophone);
 #endif
-        }
-        */
-
-        private void Start()
-        {
-            // 녹음 시작/종료를 recordButton 클릭으로 제어
-            recordButton.onClick.AddListener(ToggleRecording);
         }
 
         private void ChangeMicrophone(int index)
@@ -70,10 +63,7 @@ namespace Samples.Whisper
             if (string.IsNullOrEmpty(input))
                 return input;
 
-            // 한글 문자 및 기타 특수 문자를 제거
             string cleanedText = System.Text.RegularExpressions.Regex.Replace(input, @"[^\u0000-\u007F]+", "");
-
-            // ASCII로 변환하여 반환
             return cleanedText;
         }
 
@@ -82,7 +72,6 @@ namespace Samples.Whisper
             if (string.IsNullOrEmpty(input))
                 return input;
 
-            // 한글과 특수 문자 제거 (공백 및 알파벳, 숫자만 남기기)
             string result = System.Text.RegularExpressions.Regex.Replace(input, @"[^a-zA-Z0-9\s]", "");
             return result;
         }
@@ -91,8 +80,26 @@ namespace Samples.Whisper
         {
             if (isRecording) return;
 
-            string selectedDevice = null; // 안드로이드 기본 마이크 사용
-            Debug.Log("Using built-in microphone for recording.");
+            // 사용 가능한 마이크 장치 목록 가져오기
+            string[] devices = Microphone.devices;
+            if (devices.Length == 0)
+            {
+                Debug.LogError("No microphone devices found.");
+                return;
+            }
+
+            Debug.Log("Recording started.");
+            isRecording = true;
+            nextBlink = Time.time + (1.0f / blinkSpeed);
+
+            var index = PlayerPrefs.GetInt("user-mic-device-index", 0);
+            if (index < 0 || index >= devices.Length)
+            {
+                Debug.LogError("Invalid microphone index selected.");
+                return;
+            }
+
+            string selectedDevice = devices[index];
 
             int minFreq, maxFreq;
             Microphone.GetDeviceCaps(selectedDevice, out minFreq, out maxFreq);
@@ -104,47 +111,32 @@ namespace Samples.Whisper
 
             try
             {
-                clip = Microphone.Start(selectedDevice, false, duration, maxFreq); // 녹음 시작
-                isRecording = true;
-                time = 0;
-                nextBlink = Time.time + (1.0f / blinkSpeed);
-                Debug.Log("Recording started with built-in microphone.");
+                clip = Microphone.Start(selectedDevice, false, duration, maxFreq);
             }
             catch (Exception ex)
             {
-                Debug.LogError("Failed to start recording: " + ex.Message);
+                Debug.LogError("Failed to start recording with the selected microphone. Exception: " + ex.Message);
+                return;
+            }
+
+            if (clip == null)
+            {
+                Debug.LogError("Failed to start recording with the selected microphone.");
                 isRecording = false;
             }
-        }
-
-
-        private string NormalizeDeviceName(string deviceName)
-        {
-            if (string.IsNullOrEmpty(deviceName))
-                return deviceName;
-
-            // UTF-8로 인코딩 후 다시 디코딩
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(deviceName);
-            string utf8String = Encoding.UTF8.GetString(utf8Bytes);
-
-            // ASCII로 변환하여 비 ASCII 문자 제거
-            byte[] asciiBytes = Encoding.ASCII.GetBytes(utf8String);
-            string asciiString = Encoding.ASCII.GetString(asciiBytes);
-
-            // 빈 문자열이 반환되면 원래 문자열을 반환
-            if (string.IsNullOrEmpty(asciiString))
+            else
             {
-                Debug.LogWarning($"Cannot normalize the device name: {deviceName}, using original.");
-                return deviceName;
-            }
+                Debug.Log("Recording started with " + selectedDevice);
+                isRecording = true;
 
-            return asciiString;
+                // 녹음이 성공적으로 시작된 후에 마이크 이름에서 한글 및 특수 문자 제거
+                string sanitizedDeviceName = RemoveKoreanAndSpecialCharacters(selectedDevice);
+                Debug.Log("Sanitized Microphone Name: " + sanitizedDeviceName);
+            }
         }
 
         private async void EndRecording()
         {
-            if (!isRecording) return;
-
             Debug.Log("Recording ended.");
             isRecording = false;
 
@@ -196,15 +188,6 @@ namespace Samples.Whisper
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                if (!isRecording)
-                {
-                    Debug.Log("Space bar pressed - starting recording.");
-                    StartRecording();
-                }
-            }
-
             if (isRecording)
             {
                 time += Time.deltaTime;
